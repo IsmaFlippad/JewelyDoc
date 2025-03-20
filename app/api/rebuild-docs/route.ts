@@ -6,27 +6,28 @@ console.log("GitHub Repo:", process.env.GITHUB_REPO);
 console.log("Vercel Hook:", process.env.VERCEL_DEPLOY_HOOK_URL);
 
 export async function POST(request: Request) {
-  // Add CORS headers to allow requests from WordPress domain
-  const allowedOrigins = ['https://www.jewely.fr']; // Replace with your WordPress site URL
+  // Set CORS headers
+  const responseHeaders = new Headers();
+  responseHeaders.set("Access-Control-Allow-Origin", "https://www.jewely.fr");
+  responseHeaders.set("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  responseHeaders.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-WPDS-Operation");
 
-  const origin = request.headers.get('Origin');
-  if (allowedOrigins.includes(origin || '')) {
-    const response = NextResponse.next();
-    response.headers.set('Access-Control-Allow-Origin', origin || '*');
-    response.headers.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, DELETE');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-WPDS-Operation');
-
-    // If the request is a preflight (OPTIONS), respond with 200 OK
-    if (request.method === 'OPTIONS') {
-      return response;
-    }
+  // Handle OPTIONS method
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 200,
+      headers: responseHeaders,
+    });
   }
 
   try {
     // Security check
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.REBUILD_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: responseHeaders,
+      });
     }
 
     const operation = request.headers.get("X-WPDS-Operation");
@@ -36,21 +37,31 @@ export async function POST(request: Request) {
     console.log("Received request:", {
       operation,
       body: JSON.stringify(body, null, 2),
-      headers: Object.fromEntries(request.headers)
+      headers: Object.fromEntries(request.headers),
     });
 
+    let response;
     if (operation === "delete") {
-      return handleDelete(body.slug);
+      response = await handleDelete(body.slug);
+    } else {
+      response = await handleUpsert(body.slug, body.content, body.title);
     }
 
-    // Call handleUpsert with title, content, and slug
-    return handleUpsert(body.slug, body.content, body.title);
+    // Add CORS headers to the response
+    response.headers.forEach((value, key) => {
+      responseHeaders.set(key, value);
+    });
+
+    return new Response(response.body, {
+      status: response.status,
+      headers: responseHeaders,
+    });
   } catch (error) {
     console.error("Error:", error);
-    return NextResponse.json(
-      { error: error.message, stack: error.stack },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: error.message, stack: error.stack }), {
+      status: 500,
+      headers: responseHeaders,
+    });
   }
 }
 
@@ -60,25 +71,34 @@ async function handleUpsert(slug: string, content: string, title?: string) {
 
   // Validate parameters
   if (!slug || !content) {
-    return NextResponse.json(
-      { error: "Slug and content are required" },
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: "Slug and content are required" }), {
+      status: 400,
+      headers: {
+        "Access-Control-Allow-Origin": "https://www.jewely.fr",
+        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+    });
   }
-  
-  if (typeof slug !== "string" || typeof content !== "string") {
-    return NextResponse.json(
-      { error: "Invalid data types" },
-      { status: 400 }
-    );
-  }
-  // Format the Markdown content with front matter
-        const formattedContent = `---
-      title: ${title || slug}
-      slug: /${slug}
-      ---
 
-      ${content}`;
+  if (typeof slug !== "string" || typeof content !== "string") {
+    return new Response(JSON.stringify({ error: "Invalid data types" }), {
+      status: 400,
+      headers: {
+        "Access-Control-Allow-Origin": "https://www.jewely.fr",
+        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+    });
+  }
+
+  // Format the Markdown content with front matter
+  const formattedContent = `---
+title: ${title || slug}
+slug: /${slug}
+---
+
+${content}`;
 
   // Log before making changes on GitHub
   console.log(`Upserting ${slug}.md with content:`, formattedContent);
@@ -115,7 +135,14 @@ async function handleUpsert(slug: string, content: string, title?: string) {
 
   // Trigger a Vercel rebuild after updating GitHub
   await triggerVercelRebuild();
-  return NextResponse.json({ success: true });
+  return new Response(JSON.stringify({ success: true }), {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "https://www.jewely.fr",
+      "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
+  });
 }
 
 async function handleDelete(slug: string) {
@@ -141,10 +168,24 @@ async function handleDelete(slug: string) {
     });
 
     await triggerVercelRebuild();
-    return NextResponse.json({ success: true });
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "https://www.jewely.fr",
+        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+    });
   } catch (error) {
     if (error.status === 404) {
-      return NextResponse.json({ success: true, warning: "File already deleted" });
+      return new Response(JSON.stringify({ success: true, warning: "File already deleted" }), {
+        status: 200,
+        headers: {
+          "Access-Control-Allow-Origin": "https://www.jewely.fr",
+          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      });
     }
     throw error;
   }
