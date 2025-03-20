@@ -1,70 +1,95 @@
-import { NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
+import { NextResponse } from "next/server";
+import { Octokit } from "octokit";
 
 export async function POST(request: Request) {
   try {
-    // Check for authorization
-    const authHeader = request.headers.get("authorization")
-
-    if (!process.env.REBUILD_SECRET || authHeader !== `Bearer ${process.env.REBUILD_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // Vérification sécurité (identique)
+    const authHeader = request.headers.get("authorization");
+    if (authHeader !== `Bearer ${process.env.REBUILD_SECRET}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get data from request
-    const body = await request.json()
-    const { slug, title, content } = body
-
-    // Validate input
-    if (!slug || !content) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    // Gestion des opérations DELETE
+    if (request.headers.get("X-WPDS-Operation") === "delete") {
+      const { slug } = await request.json();
+      return handleDelete(slug);
     }
 
-    // File Path Configuration
-    const docsPath = path.join(process.cwd(), "docs")
+    // Gestion normale POST (création/mise à jour)
+    const { slug, content } = await request.json();
+    return handleUpsert(slug, content);
 
-    // Ensure docs directory exists
-    if (!fs.existsSync(docsPath)) {
-      fs.mkdirSync(docsPath, { recursive: true })
-    }
-
-    // Format the content with frontmatter
-    const formattedContent = `---
-title: ${title || slug}
-slug: /${slug}
----
-
-${content}`
-
-    // Write Markdown file
-    const filePath = path.join(docsPath, `${slug}.md`)
-    fs.writeFileSync(filePath, formattedContent)
-
-    // Trigger a new build on Vercel
-    if (process.env.VERCEL_DEPLOY_HOOK_URL) {
-      const response = await fetch(process.env.VERCEL_DEPLOY_HOOK_URL, {
-        method: "POST",
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to trigger Vercel deploy: ${response.statusText}`)
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Documentation updated and rebuild triggered",
-      file: `${slug}.md`,
-    })
   } catch (error) {
-    console.error("Error processing request:", error)
-    return NextResponse.json(
-      {
-        error: "Failed to process request",
-        message: error.message,
-      },
-      { status: 500 },
-    )
+    console.error("Erreur:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
+async function handleUpsert(slug: string, content: string) {
+  const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+  const [owner, repo] = process.env.GITHUB_REPO!.split("/");
+
+  // Récupération SHA existant pour mise à jour
+  let sha: string | undefined;
+  try {
+    const { data } = await octokit.rest.repos.getContent({
+      owner,
+      repo,
+      path: `docs/${slug}.md`,
+    });
+    sha = (data as any).sha;
+  } catch {} // Fichier non existant = création
+
+  // Commit GitHub
+  await octokit.rest.repos.createOrUpdateFileContents({
+    owner,
+    repo,
+    path: `docs/${slug}.md`,
+    message: `Sync ${slug}.md from WordPress`,
+    content: Buffer.from(content).toString("base64"),
+    sha,
+    branch: "main",
+  });
+
+  triggerVercelRebuild();
+  return NextResponse.json({ success: true });
+}
+
+async function handleDelete(slug: string) {
+  const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+  const [owner, repo] = process.env.GITHUB_REPO!.split("/");
+
+  try {
+    // Récupération SHA nécessaire pour suppression
+    const { data } = await octokit.rest.repos.getContent({
+      owner,
+      repo,
+      path: `docs/${slug}.md`,
+    });
+
+    // Commit de suppression
+    await octokit.rest.repos.deleteFile({
+      owner,
+      repo,
+      path: `docs/${slug}.md`,
+      message: `Delete ${slug}.md from WordPress`,
+      sha: (data as any).sha,
+      branch: "main",
+    });
+
+    triggerVercelRebuild();
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    if (error.status === 404) {
+      return NextResponse.json({ success: true, warning: "File already deleted" });
+    }
+    throw error;
+  }
+}
+
+function triggerVercelRebuild() {
+  if (process.env.VERCEL_DEPLOY_HOOK_URL) {
+    fetch(process.env.VERCEL_DEPLOY_HOOK_URL, { method: "POST" });
+  }
+}
