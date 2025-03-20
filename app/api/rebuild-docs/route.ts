@@ -7,14 +7,14 @@ console.log("Vercel Hook:", process.env.VERCEL_DEPLOY_HOOK_URL);
 
 export async function POST(request: Request) {
   // Add CORS headers to allow requests from WordPress domain
-  const allowedOrigins = ['https://your-wordpress-site.com']; // Replace with your WordPress site URL
+  const allowedOrigins = ['https://www.jewely.fr']; // Replace with your WordPress site URL
 
   const origin = request.headers.get('Origin');
   if (allowedOrigins.includes(origin || '')) {
     const response = NextResponse.next();
     response.headers.set('Access-Control-Allow-Origin', origin || '*');
-    response.headers.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    response.headers.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, DELETE');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-WPDS-Operation');
 
     // If the request is a preflight (OPTIONS), respond with 200 OK
     if (request.method === 'OPTIONS') {
