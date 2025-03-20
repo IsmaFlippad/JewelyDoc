@@ -17,8 +17,8 @@ const config = {
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: "jewely", // Usually your GitHub org/user name.
-  projectName: "jewely-docs", // Usually your repo name.
+  organizationName: "IsmaFLippad", // Usually your GitHub org/user name.
+  projectName: "JewelyDoc", // Usually your repo name.
 
   onBrokenLinks: "warn", // More forgiving than 'throw'
   onBrokenMarkdownLinks: "warn",

@@ -1,9 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // This config is needed for the API route
-  // The rest of the site will be built with Docusaurus
   reactStrictMode: true,
+  // Ajoutez d'autres configurations si nécessaire
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: '/app/api/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
-

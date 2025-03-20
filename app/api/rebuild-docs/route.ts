@@ -14,6 +14,12 @@ function setCorsHeaders(response: NextResponse) {
 
 export async function POST(request: Request) {
   try {
+    // Handle CORS preflight request
+    if (request.method === "OPTIONS") {
+      const response = new NextResponse(null, { status: 204 });
+      return setCorsHeaders(response);
+    }
+
     // Security check
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.REBUILD_SECRET}`) {
