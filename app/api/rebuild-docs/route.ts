@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { Octokit } from "octokit";
 
 console.log("GitHub Token:", process.env.GITHUB_TOKEN ? "Present" : "Missing");
 console.log("GitHub Repo:", process.env.GITHUB_REPO);
@@ -57,6 +56,7 @@ export async function POST(request: Request) {
 }
 
 async function handleUpsert(slug: string, content: string, title?: string) {
+  const { Octokit } = await import("octokit");
   const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
   const [owner, repo] = process.env.GITHUB_REPO!.split("/");
 
@@ -137,6 +137,7 @@ ${content}`;
 }
 
 async function handleDelete(slug: string) {
+  const { Octokit } = await import("octokit");
   const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
   const [owner, repo] = process.env.GITHUB_REPO!.split("/");
 
