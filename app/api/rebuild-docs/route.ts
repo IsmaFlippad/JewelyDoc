@@ -1,10 +1,27 @@
 import { NextResponse } from "next/server";
 import { Octokit } from "octokit";
+
 console.log("GitHub Token:", process.env.GITHUB_TOKEN ? "Present" : "Missing");
 console.log("GitHub Repo:", process.env.GITHUB_REPO);
 console.log("Vercel Hook:", process.env.VERCEL_DEPLOY_HOOK_URL);
 
 export async function POST(request: Request) {
+  // Add CORS headers to allow requests from WordPress domain
+  const allowedOrigins = ['https://your-wordpress-site.com']; // Replace with your WordPress site URL
+
+  const origin = request.headers.get('Origin');
+  if (allowedOrigins.includes(origin || '')) {
+    const response = NextResponse.next();
+    response.headers.set('Access-Control-Allow-Origin', origin || '*');
+    response.headers.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    // If the request is a preflight (OPTIONS), respond with 200 OK
+    if (request.method === 'OPTIONS') {
+      return response;
+    }
+  }
+
   try {
     // Security check
     const authHeader = request.headers.get("authorization");
@@ -26,7 +43,7 @@ export async function POST(request: Request) {
       return handleDelete(body.slug);
     }
 
-    // Call handleUpsert with title, content and slug
+    // Call handleUpsert with title, content, and slug
     return handleUpsert(body.slug, body.content, body.title);
   } catch (error) {
     console.error("Error:", error);
