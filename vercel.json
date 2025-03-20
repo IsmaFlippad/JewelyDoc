@@ -5,7 +5,7 @@
       "use": "@vercel/node"
     },
     {
-      "src": "docusaurus.config.js",
+      "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build"
