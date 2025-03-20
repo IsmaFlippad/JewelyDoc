@@ -14,12 +14,6 @@ function setCorsHeaders(response: NextResponse) {
 
 export async function POST(request: Request) {
   try {
-    // Handle CORS preflight request
-    if (request.method === "OPTIONS") {
-      const response = new NextResponse(null, { status: 204 });
-      return setCorsHeaders(response);
-    }
-
     // Security check
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.REBUILD_SECRET}`) {
@@ -62,25 +56,11 @@ async function handleUpsert(slug: string, content: string, title?: string) {
 
   // Validate parameters
   if (!slug || !content) {
-    return new Response(JSON.stringify({ error: "Slug and content are required" }), {
-      status: 400,
-      headers: {
-        "Access-Control-Allow-Origin": "https://www.jewely.fr",
-        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    });
+    return NextResponse.json({ error: "Slug and content are required" }, { status: 400 });
   }
 
   if (typeof slug !== "string" || typeof content !== "string") {
-    return new Response(JSON.stringify({ error: "Invalid data types" }), {
-      status: 400,
-      headers: {
-        "Access-Control-Allow-Origin": "https://www.jewely.fr",
-        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    });
+    return NextResponse.json({ error: "Invalid data types" }, { status: 400 });
   }
 
   // Format the Markdown content with front matter
@@ -126,14 +106,7 @@ ${content}`;
 
   // Trigger a Vercel rebuild after updating GitHub
   await triggerVercelRebuild();
-  return new Response(JSON.stringify({ success: true }), {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "https://www.jewely.fr",
-      "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  });
+  return NextResponse.json({ success: true }, { status: 200 });
 }
 
 async function handleDelete(slug: string) {
@@ -160,24 +133,10 @@ async function handleDelete(slug: string) {
     });
 
     await triggerVercelRebuild();
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "https://www.jewely.fr",
-        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    });
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
     if (error.status === 404) {
-      return new Response(JSON.stringify({ success: true, warning: "File already deleted" }), {
-        status: 200,
-        headers: {
-          "Access-Control-Allow-Origin": "https://www.jewely.fr",
-          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
-        },
-      });
+      return NextResponse.json({ success: true, warning: "File already deleted" }, { status: 200 });
     }
     throw error;
   }
