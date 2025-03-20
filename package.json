@@ -13,7 +13,8 @@
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
     "typecheck": "tsc",
-    "dev": "next dev"
+    "dev": "next dev",
+    "build:next": "next build"
   },
   "dependencies": {
     "@docusaurus/core": "2.4.3",
@@ -38,4 +39,3 @@
     "node": ">=16.14"
   }
 }
-
