@@ -3,33 +3,58 @@ import { Octokit } from "octokit";
 
 export async function POST(request: Request) {
   try {
-    // Vérification sécurité (identique)
+    // Security check
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.REBUILD_SECRET}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Gestion des opérations DELETE
-    if (request.headers.get("X-WPDS-Operation") === "delete") {
-      const { slug } = await request.json();
-      return handleDelete(slug);
+    const operation = request.headers.get("X-WPDS-Operation");
+    const body = await request.json();
+
+    // Detailed logging for debugging
+    console.log("Received request:", {
+      operation,
+      body: JSON.stringify(body, null, 2),
+      headers: Object.fromEntries(request.headers)
+    });
+
+    if (operation === "delete") {
+      return handleDelete(body.slug);
     }
 
-    // Gestion normale POST (création/mise à jour)
-    const { slug, content } = await request.json();
-    return handleUpsert(slug, content);
-
+    // Call handleUpsert with title, content and slug
+    return handleUpsert(body.slug, body.content, body.title);
   } catch (error) {
-    console.error("Erreur:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Error:", error);
+    return NextResponse.json(
+      { error: error.message, stack: error.stack },
+      { status: 500 }
+    );
   }
 }
 
-async function handleUpsert(slug: string, content: string) {
+async function handleUpsert(slug: string, content: string, title?: string) {
   const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
   const [owner, repo] = process.env.GITHUB_REPO!.split("/");
 
-  // Récupération SHA existant pour mise à jour
+  // Validate parameters
+  if (!slug || !content) {
+    throw new Error("Slug and content are required");
+  }
+
+  // Format the Markdown content with front matter
+  const formattedContent = `---
+title: ${title || slug}
+slug: /${slug}
+---
+
+${content}`;
+
+  // Log before making changes on GitHub
+  console.log(`Upserting ${slug}.md with content:`, formattedContent);
+
+  // Retrieve the existing SHA if the file exists (for update)
   let sha: string | undefined;
   try {
     const { data } = await octokit.rest.repos.getContent({
@@ -38,20 +63,24 @@ async function handleUpsert(slug: string, content: string) {
       path: `docs/${slug}.md`,
     });
     sha = (data as any).sha;
-  } catch {} // Fichier non existant = création
+  } catch (error) {
+    // If file does not exist, we'll create it
+    console.log(`File docs/${slug}.md does not exist. It will be created.`);
+  }
 
-  // Commit GitHub
+  // Commit to GitHub (create or update file)
   await octokit.rest.repos.createOrUpdateFileContents({
     owner,
     repo,
     path: `docs/${slug}.md`,
     message: `Sync ${slug}.md from WordPress`,
-    content: Buffer.from(content).toString("base64"),
+    content: Buffer.from(formattedContent).toString("base64"),
     sha,
     branch: "main",
   });
 
-  triggerVercelRebuild();
+  // Trigger a Vercel rebuild after updating GitHub
+  await triggerVercelRebuild();
   return NextResponse.json({ success: true });
 }
 
@@ -60,14 +89,14 @@ async function handleDelete(slug: string) {
   const [owner, repo] = process.env.GITHUB_REPO!.split("/");
 
   try {
-    // Récupération SHA nécessaire pour suppression
+    // Retrieve the SHA necessary for deletion
     const { data } = await octokit.rest.repos.getContent({
       owner,
       repo,
       path: `docs/${slug}.md`,
     });
 
-    // Commit de suppression
+    // Commit deletion on GitHub
     await octokit.rest.repos.deleteFile({
       owner,
       repo,
@@ -77,9 +106,8 @@ async function handleDelete(slug: string) {
       branch: "main",
     });
 
-    triggerVercelRebuild();
+    await triggerVercelRebuild();
     return NextResponse.json({ success: true });
-
   } catch (error) {
     if (error.status === 404) {
       return NextResponse.json({ success: true, warning: "File already deleted" });
@@ -88,8 +116,21 @@ async function handleDelete(slug: string) {
   }
 }
 
-function triggerVercelRebuild() {
-  if (process.env.VERCEL_DEPLOY_HOOK_URL) {
-    fetch(process.env.VERCEL_DEPLOY_HOOK_URL, { method: "POST" });
+async function triggerVercelRebuild() {
+  if (!process.env.VERCEL_DEPLOY_HOOK_URL) {
+    console.warn("Vercel Deploy Hook URL is missing");
+    return;
+  }
+
+  try {
+    const response = await fetch(process.env.VERCEL_DEPLOY_HOOK_URL, {
+      method: "POST",
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to trigger Vercel deploy: ${response.statusText}`);
+    }
+    console.log("Vercel rebuild triggered successfully");
+  } catch (error) {
+    console.error("Error triggering Vercel rebuild:", error);
   }
 }
