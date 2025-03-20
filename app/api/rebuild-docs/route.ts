@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { Octokit } from "octokit";
 
 console.log("GitHub Token:", process.env.GITHUB_TOKEN ? "Present" : "Missing");
 console.log("GitHub Repo:", process.env.GITHUB_REPO);
@@ -13,20 +12,8 @@ function setCorsHeaders(response: NextResponse) {
   return response;
 }
 
-export async function OPTIONS(request: Request) {
-  // Handle CORS preflight request
-  const response = new NextResponse(null, { status: 204 });
-  return setCorsHeaders(response);
-}
-
 export async function POST(request: Request) {
   try {
-    // Handle CORS preflight request
-    if (request.method === "OPTIONS") {
-      const response = new NextResponse(null, { status: 204 });
-      return setCorsHeaders(response);
-    }
-
     // Security check
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.REBUILD_SECRET}`) {
@@ -63,30 +50,17 @@ export async function POST(request: Request) {
 }
 
 async function handleUpsert(slug: string, content: string, title?: string) {
+  const { Octokit } = await import("octokit");
   const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
   const [owner, repo] = process.env.GITHUB_REPO!.split("/");
 
   // Validate parameters
   if (!slug || !content) {
-    return new Response(JSON.stringify({ error: "Slug and content are required" }), {
-      status: 400,
-      headers: {
-        "Access-Control-Allow-Origin": "https://www.jewely.fr",
-        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    });
+    return NextResponse.json({ error: "Slug and content are required" }, { status: 400 });
   }
 
   if (typeof slug !== "string" || typeof content !== "string") {
-    return new Response(JSON.stringify({ error: "Invalid data types" }), {
-      status: 400,
-      headers: {
-        "Access-Control-Allow-Origin": "https://www.jewely.fr",
-        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    });
+    return NextResponse.json({ error: "Invalid data types" }, { status: 400 });
   }
 
   // Format the Markdown content with front matter
@@ -98,47 +72,91 @@ slug: /${slug}
 ${content}`;
 
   // Log before making changes on GitHub
-  console.log("Upserting content for slug:", slug);
+  console.log(`Upserting ${slug}.md with content:`, formattedContent);
 
+  // Retrieve the existing SHA if the file exists (for update)
+  let sha: string | undefined;
   try {
-    const response = await octokit.request("POST /repos/{owner}/{repo}/contents/{path}", {
+    const { data } = await octokit.rest.repos.getContent({
       owner,
       repo,
       path: `docs/${slug}.md`,
-      message: `Update ${slug}`,
-      content: Buffer.from(formattedContent).toString("base64"),
-      branch: "main", // Specify the branch name
     });
-    console.log("GitHub response:", response);
-    return NextResponse.json({ message: "Content upserted successfully" }, { status: 200 });
+    sha = (data as any).sha;
   } catch (error) {
-    console.error("GitHub error:", error);
-    return NextResponse.json(
-      { error: error.message, stack: error.stack },
-      { status: 500 }
-    );
+    // If file does not exist, we'll create it
+    console.log(`File docs/${slug}.md does not exist. It will be created.`);
   }
+
+  // Commit to GitHub (create or update file)
+  try {
+    await octokit.rest.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: `docs/${slug}.md`,
+      message: `Sync ${slug}.md from WordPress`,
+      content: Buffer.from(formattedContent).toString("base64"),
+      sha,
+      branch: "main",
+    });
+  } catch (error) {
+    console.error("GitHub API Error:", error);
+    throw new Error(`Failed to update GitHub: ${error.message}`);
+  }
+
+  // Trigger a Vercel rebuild after updating GitHub
+  await triggerVercelRebuild();
+  return NextResponse.json({ success: true }, { status: 200 });
 }
 
 async function handleDelete(slug: string) {
+  const { Octokit } = await import("octokit");
   const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
   const [owner, repo] = process.env.GITHUB_REPO!.split("/");
 
   try {
-    const response = await octokit.request("DELETE /repos/{owner}/{repo}/contents/{path}", {
+    // Retrieve the SHA necessary for deletion
+    const { data } = await octokit.rest.repos.getContent({
       owner,
       repo,
       path: `docs/${slug}.md`,
-      message: `Delete ${slug}`,
-      branch: "main", // Specify the branch name
     });
-    console.log("GitHub response:", response);
-    return NextResponse.json({ message: "Content deleted successfully" }, { status: 200 });
+
+    // Commit deletion on GitHub
+    await octokit.rest.repos.deleteFile({
+      owner,
+      repo,
+      path: `docs/${slug}.md`,
+      message: `Delete ${slug}.md from WordPress`,
+      sha: (data as any).sha,
+      branch: "main",
+    });
+
+    await triggerVercelRebuild();
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error("GitHub error:", error);
-    return NextResponse.json(
-      { error: error.message, stack: error.stack },
-      { status: 500 }
-    );
+    if (error.status === 404) {
+      return NextResponse.json({ success: true, warning: "File already deleted" }, { status: 200 });
+    }
+    throw error;
+  }
+}
+
+async function triggerVercelRebuild() {
+  if (!process.env.VERCEL_DEPLOY_HOOK_URL) {
+    console.warn("Vercel Deploy Hook URL is missing");
+    return;
+  }
+
+  try {
+    const response = await fetch(process.env.VERCEL_DEPLOY_HOOK_URL, {
+      method: "POST",
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to trigger Vercel deploy: ${response.statusText}`);
+    }
+    console.log("Vercel rebuild triggered successfully");
+  } catch (error) {
+    console.error("Error triggering Vercel rebuild:", error);
   }
 }
