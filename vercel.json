@@ -1,6 +1,25 @@
 {
-  "buildCommand": "npm install --legacy-peer-deps && npm run build",
-  "outputDirectory": ".next",
-  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/$1" }]
+  "builds": [
+    {
+      "src": "app/api/**/*",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "docusaurus.config.js",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/app/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/build/$1"
+    }
+  ]
 }
-
