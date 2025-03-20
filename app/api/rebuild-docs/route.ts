@@ -5,29 +5,27 @@ console.log("GitHub Token:", process.env.GITHUB_TOKEN ? "Present" : "Missing");
 console.log("GitHub Repo:", process.env.GITHUB_REPO);
 console.log("Vercel Hook:", process.env.VERCEL_DEPLOY_HOOK_URL);
 
+// Helper function to set CORS headers
+function setCorsHeaders(response: NextResponse) {
+  response.headers.set("Access-Control-Allow-Origin", "https://www.jewely.fr");
+  response.headers.set("Access-Control-Allow-Methods", "POST, DELETE, OPTIONS");
+  response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-WPDS-Operation");
+  return response;
+}
+
 export async function POST(request: Request) {
-  // Set CORS headers
-  const responseHeaders = new Headers();
-  responseHeaders.set("Access-Control-Allow-Origin", "https://www.jewely.fr");
-  responseHeaders.set("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-  responseHeaders.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-WPDS-Operation");
-
-  // Handle OPTIONS method
-  if (request.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
-      headers: responseHeaders,
-    });
-  }
-
   try {
+    // Handle CORS preflight request
+    if (request.method === "OPTIONS") {
+      const response = new NextResponse(null, { status: 204 });
+      return setCorsHeaders(response);
+    }
+
     // Security check
     const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.REBUILD_SECRET}`) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: responseHeaders,
-      });
+      const response = NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return setCorsHeaders(response);
     }
 
     const operation = request.headers.get("X-WPDS-Operation");
@@ -37,31 +35,24 @@ export async function POST(request: Request) {
     console.log("Received request:", {
       operation,
       body: JSON.stringify(body, null, 2),
-      headers: Object.fromEntries(request.headers),
+      headers: Object.fromEntries(request.headers)
     });
 
-    let response;
+    let result;
     if (operation === "delete") {
-      response = await handleDelete(body.slug);
+      result = await handleDelete(body.slug);
     } else {
-      response = await handleUpsert(body.slug, body.content, body.title);
+      result = await handleUpsert(body.slug, body.content, body.title);
     }
 
-    // Add CORS headers to the response
-    response.headers.forEach((value, key) => {
-      responseHeaders.set(key, value);
-    });
-
-    return new Response(response.body, {
-      status: response.status,
-      headers: responseHeaders,
-    });
+    return setCorsHeaders(result);
   } catch (error) {
     console.error("Error:", error);
-    return new Response(JSON.stringify({ error: error.message, stack: error.stack }), {
-      status: 500,
-      headers: responseHeaders,
-    });
+    const response = NextResponse.json(
+      { error: error.message, stack: error.stack },
+      { status: 500 }
+    );
+    return setCorsHeaders(response);
   }
 }
 
