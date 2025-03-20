@@ -1,5 +1,6 @@
 {
   "buildCommand": "npm install --legacy-peer-deps && npm run build",
-  "outputDirectory": "build",
+  "outputDirectory": ".next",
   "rewrites": [{ "source": "/api/(.*)", "destination": "/api/$1" }]
 }
+
