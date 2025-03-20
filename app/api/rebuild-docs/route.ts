@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { Octokit } from "octokit";
+console.log("GitHub Token:", process.env.GITHUB_TOKEN ? "Present" : "Missing");
+console.log("GitHub Repo:", process.env.GITHUB_REPO);
+console.log("Vercel Hook:", process.env.VERCEL_DEPLOY_HOOK_URL);
 
 export async function POST(request: Request) {
   try {
@@ -40,16 +43,25 @@ async function handleUpsert(slug: string, content: string, title?: string) {
 
   // Validate parameters
   if (!slug || !content) {
-    throw new Error("Slug and content are required");
+    return NextResponse.json(
+      { error: "Slug and content are required" },
+      { status: 400 }
+    );
   }
-
+  
+  if (typeof slug !== "string" || typeof content !== "string") {
+    return NextResponse.json(
+      { error: "Invalid data types" },
+      { status: 400 }
+    );
+  }
   // Format the Markdown content with front matter
-  const formattedContent = `---
-title: ${title || slug}
-slug: /${slug}
----
+        const formattedContent = `---
+      title: ${title || slug}
+      slug: /${slug}
+      ---
 
-${content}`;
+      ${content}`;
 
   // Log before making changes on GitHub
   console.log(`Upserting ${slug}.md with content:`, formattedContent);
@@ -69,15 +81,20 @@ ${content}`;
   }
 
   // Commit to GitHub (create or update file)
-  await octokit.rest.repos.createOrUpdateFileContents({
-    owner,
-    repo,
-    path: `docs/${slug}.md`,
-    message: `Sync ${slug}.md from WordPress`,
-    content: Buffer.from(formattedContent).toString("base64"),
-    sha,
-    branch: "main",
-  });
+  try {
+    await octokit.rest.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: `docs/${slug}.md`,
+      message: `Sync ${slug}.md from WordPress`,
+      content: Buffer.from(formattedContent).toString("base64"),
+      sha,
+      branch: "main",
+    });
+  } catch (error) {
+    console.error("GitHub API Error:", error);
+    throw new Error(`Failed to update GitHub: ${error.message}`);
+  }
 
   // Trigger a Vercel rebuild after updating GitHub
   await triggerVercelRebuild();
