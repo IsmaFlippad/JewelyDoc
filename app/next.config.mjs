@@ -1,7 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone', // Pour une meilleure compatibilité avec Vercel
-  distDir: '.next', // Dossier de build Next.js
+  reactStrictMode: true,
+  rewrites: async () => [
+    {
+      source: "/:path*", // Toutes les routes
+      destination: "/:path*", // Fichiers statiques de Docusaurus
+    },
+  ],
 };
 
-module.exports = nextConfig;
+export default nextConfig;

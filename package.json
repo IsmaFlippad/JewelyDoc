@@ -1,14 +1,8 @@
 {
-  "name": "jewely-docs",
-  "version": "0.0.1",
-  "private": true,
   "scripts": {
-    "build": "npm run build --prefix frontend && npm run build --prefix app",
-    "start": "npm start --prefix frontend",
+    "build": "npm run build --prefix app/frontend && npm run build --prefix app",
+    "start": "node app/.next/standalone/server.js",
     "dev": "npm run dev --prefix app",
     "deploy": "vercel --prod"
-  },
-  "engines": {
-    "node": ">= 20.0.0"
   }
 }
