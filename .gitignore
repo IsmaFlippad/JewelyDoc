@@ -2,3 +2,5 @@ node_modules
 .docusaurus
 build
 package-lock.json
+.next
+next-env.d.ts
