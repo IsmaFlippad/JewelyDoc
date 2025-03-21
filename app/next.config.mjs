@@ -4,7 +4,7 @@ const nextConfig = {
   rewrites: async () => [
     {
       source: "/:path*", // Toutes les routes
-      destination: "/frontend/:path*", // Fichiers statiques de Docusaurus
+      destination: "/app/public/:path*", // Fichiers statiques de Docusaurus
     },
   ],
 };
