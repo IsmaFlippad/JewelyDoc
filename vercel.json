@@ -1,5 +1,29 @@
 {
-  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/$1" }],
-  "outputDirectory": "build"
+  "version": 2,
+  "builds": [
+    {
+      "src": "app/package.json",
+      "use": "@vercel/node",
+      "config": {
+        "distDir": ".next"
+      }
+    },
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/app/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/build/$1"
+    }
+  ]
 }
-
