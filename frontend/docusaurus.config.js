@@ -109,8 +109,4 @@ const config = {
     }),
 }
 
-module.exports = {
-  config,
-  // outDir: './build', 
-};
-
+module.exports = config;
