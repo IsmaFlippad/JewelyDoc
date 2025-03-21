@@ -8,7 +8,7 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "buildCommand": "npm install && npm run build:next && npm run build"
+        "buildCommand": "npm install --legacy-peer-deps && npm run build:custom"
       }
     }
   ],
@@ -21,6 +21,10 @@
         "Access-Control-Allow-Methods": "POST, DELETE, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization, X-WPDS-Operation"
       }
+    },
+    {
+      "src": "/_next/(.*)",
+      "dest": "/.next/$1"
     },
     {
       "src": "/(.*)",
