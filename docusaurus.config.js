@@ -100,7 +100,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Jewely Documentation. Built with Docusaurus.`,
+        copyright: `Copyright © 2025 Jewely Documentation. Built with Docusaurus.`,
       },
       prism: {
         theme: lightCodeTheme,

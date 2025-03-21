@@ -8,8 +8,7 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "build",
-        "buildCommand": "npm install --legacy-peer-deps && npm run build && npm run build:next"
+        "buildCommand": "npm install && npm run build:next && npm run build"
       }
     }
   ],
