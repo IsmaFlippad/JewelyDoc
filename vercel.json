@@ -1,42 +1,5 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "app/api/**/*.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build",
-        "buildCommand": "npm install --legacy-peer-deps && npm run build && npm run build:next"
-      }
-    }
-  ],
-  "functions": {
-    "app/api/**/*.ts": {
-      "runtime": "nodejs18.x"
-    }
-  },
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/app/api/$1",
-      "headers": {
-        "Access-Control-Allow-Origin": "https://www.jewely.fr",
-        "Access-Control-Allow-Methods": "POST, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-WPDS-Operation"
-      }
-    },
-    {
-      "src": "/_next/(.*)",
-      "dest": "/.next/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/build/$1"
-    }
-  ]
+  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/$1" }],
+  "outputDirectory": "build"
 }
 
