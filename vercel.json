@@ -1,7 +1,7 @@
 {
   "builds": [
     {
-      "src": "app/api/**/*",
+      "src": "app/api/**/*.ts",
       "use": "@vercel/node"
     },
     {
@@ -9,7 +9,7 @@
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build",
-        "buildCommand": "npm install --legacy-peer-deps && npm run build"
+        "buildCommand": "npm install --legacy-peer-deps && npm run build && npm run build:next"
       }
     }
   ],
