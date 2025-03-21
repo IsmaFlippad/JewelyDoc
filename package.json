@@ -1,7 +1,7 @@
 {
   "scripts": {
     "build": "npm run build --prefix app/frontend && npm run build --prefix app",
-    "start": "node app/.next/standalone/server.js",
+    "start": "node run start --prefix app",
     "dev": "npm run dev --prefix app",
     "deploy": "vercel --prod"
   }
