@@ -1,4 +1,5 @@
 {
+  "version": 2,
   "builds": [
     {
       "src": "app/api/**/*.ts",
@@ -8,10 +9,16 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "buildCommand": "npm install --legacy-peer-deps && npm run build:custom"
+        "distDir": "build",
+        "buildCommand": "npm install --legacy-peer-deps && npm run build && npm run build:next"
       }
     }
   ],
+  "functions": {
+    "app/api/**/*.ts": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "routes": [
     {
       "src": "/api/(.*)",
@@ -32,3 +39,4 @@
     }
   ]
 }
+
