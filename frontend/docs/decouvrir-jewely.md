@@ -3,8 +3,6 @@ title: Découvrir Jewely
 slug: /decouvrir-jewely
 ---
 
-# Découvrir Jewely
-
 Bienvenue dans la documentation de Jewely. Cette page vous aidera à découvrir les fonctionnalités principales de notre plateforme.
 
 ## Qu'est-ce que Jewely?
@@ -31,4 +29,3 @@ Pour commencer à utiliser Jewely, suivez ces étapes simples:
 ## Besoin d'aide?
 
 Si vous avez des questions ou besoin d'assistance, n'hésitez pas à contacter notre équipe de support.
-
