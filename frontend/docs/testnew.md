@@ -1,16 +1,8 @@
 ---
-title: TestNew
-slug: /testnew
----
-  ---
-title: "TestNew"
-slug: /testnew
+title: Lorem
+slug: /Ipsum
 ---
 
----
-title: Découvrir Jewely
-slug: /decouvrir-jewely
----
 # Titre Principal Lorem Ipsum
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque ut dolor nec velit tristique aliquam.

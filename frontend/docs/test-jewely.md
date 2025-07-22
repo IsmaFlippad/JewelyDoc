@@ -2,15 +2,7 @@
 title: Test Jewely
 slug: /test-jewely
 ---
-  ---
-title: "Test Jewely"
-slug: /test-jewely
----
 
----
-title: Test Jewely
-slug: /test-jewely
----
 # Titre Principal Lorem Ipsum
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque ut dolor nec velit tristique aliquam.
