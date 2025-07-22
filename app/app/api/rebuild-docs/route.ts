@@ -69,14 +69,16 @@ async function handleUpsert(slug: string, content: string, title?: string) {
     return NextResponse.json({ error: "Invalid data types" }, { status: 400 });
   }
 
-  // Format the Markdown content with front matter
+  // Clean existing front matter from content
+  const cleanedContent = content.replace(/^---[\s\S]*?---\s*/g, '').trim();
 
-// app/api/rebuild-docs/route.ts
-const formattedContent = `---
+  // Format the Markdown content with proper front matter
+  const formattedContent = `---
 title: ${title || slug}
 slug: /${slug}
 ---
-  ${content}`;
+
+${cleanedContent}`;
 
   // Log before making changes on GitHub
   console.log(`Upserting ${slug}.md with content:`, formattedContent);
@@ -91,11 +93,10 @@ slug: /${slug}
     });
     sha = (data as any).sha;
   } catch (error) {
-    // If file does not exist, we'll create it
     console.log(`File docs/${slug}.md does not exist. It will be created.`);
   }
 
-  // Commit to GitHub (create or update file)
+  // Commit to GitHub
   try {
     await octokit.rest.repos.createOrUpdateFileContents({
       owner,
@@ -108,17 +109,10 @@ slug: /${slug}
     });
     console.log('GitHub update successful');
   } catch (error) {
-    console.error('GitHub API Error Details:', {
-      status: error.status,
-      message: error.message,
-      response: error.response?.data,
-      request: error.request
-    });
+    console.error('GitHub API Error:', error);
     throw error;
   }
 
-
-  // Trigger a Vercel rebuild after updating GitHub
   await triggerVercelRebuild();
   return NextResponse.json({ success: true }, { status: 200 });
 }
