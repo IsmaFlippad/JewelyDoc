@@ -42,4 +42,3 @@ Adaptez Jewely à vos besoins spécifiques:
 - Flux de travail sur mesure
 - Modèles de documents personnalisables
 - Rôles et permissions des utilisateurs
-
