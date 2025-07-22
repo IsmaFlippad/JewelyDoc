@@ -98,22 +98,22 @@ async function handleUpsert(slug: string, content: string, title?: string) {
     await octokit.rest.repos.createOrUpdateFileContents({
       owner,
       repo,
-      path: `docs/${slug}.md`,
+      path: `frontend/docs/${slug}.md`,
       message: `Sync ${slug}.md from WordPress`,
       content: Buffer.from(formattedContent).toString("base64"),
       sha,
       branch: "main",
     });
-  console.log('GitHub update successful');
-} catch (error) {
-  console.error('GitHub API Error Details:', {
-    status: error.status,
-    message: error.message,
-    response: error.response?.data,
-    request: error.request
-  });
-  throw error;
-}
+    console.log('GitHub update successful');
+  } catch (error) {
+    console.error('GitHub API Error Details:', {
+      status: error.status,
+      message: error.message,
+      response: error.response?.data,
+      request: error.request
+    });
+    throw error;
+  }
 
 
   // Trigger a Vercel rebuild after updating GitHub
@@ -131,14 +131,14 @@ async function handleDelete(slug: string) {
     const { data } = await octokit.rest.repos.getContent({
       owner,
       repo,
-      path: `docs/${slug}.md`,
+      path: `frontend/docs/${slug}.md`,
     });
 
     // Commit deletion on GitHub
     await octokit.rest.repos.deleteFile({
       owner,
       repo,
-      path: `docs/${slug}.md`,
+      path: `frontend/docs/${slug}.md`,
       message: `Delete ${slug}.md from WordPress`,
       sha: (data as any).sha,
       branch: "main",
