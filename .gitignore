@@ -8,3 +8,4 @@ next-env.d.ts
 frontend/build/
 app/.next/
 app/public/
+.vercel

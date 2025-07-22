@@ -6,7 +6,7 @@ console.log("Vercel Hook:", process.env.VERCEL_DEPLOY_HOOK_URL);
 
 // Helper function to set CORS headers
 function setCorsHeaders(response: NextResponse) {
-  response.headers.set("Access-Control-Allow-Origin", "https://www.jewely.fr");
+  response.headers.set("Access-Control-Allow-Origin", process.env.WP_SITE_URL || "*");
   response.headers.set("Access-Control-Allow-Methods", "POST, DELETE, OPTIONS");
   response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-WPDS-Operation");
   return response;
@@ -71,11 +71,10 @@ async function handleUpsert(slug: string, content: string, title?: string) {
 
   // Format the Markdown content with front matter
   const formattedContent = `---
-title: ${title || slug}
-slug: /${slug}
----
-
-${content}`;
+                            title: ${title || slug}
+                            slug: /${slug}
+                            ---
+  ${content}`;
 
   // Log before making changes on GitHub
   console.log(`Upserting ${slug}.md with content:`, formattedContent);
@@ -86,7 +85,7 @@ ${content}`;
     const { data } = await octokit.rest.repos.getContent({
       owner,
       repo,
-      path: `docs/${slug}.md`,
+      path: `frontend/docs/${slug}.md`,
     });
     sha = (data as any).sha;
   } catch (error) {
@@ -105,10 +104,17 @@ ${content}`;
       sha,
       branch: "main",
     });
-  } catch (error) {
-    console.error("GitHub API Error:", error);
-    throw new Error(`Failed to update GitHub: ${error.message}`);
-  }
+  console.log('GitHub update successful');
+} catch (error) {
+  console.error('GitHub API Error Details:', {
+    status: error.status,
+    message: error.message,
+    response: error.response?.data,
+    request: error.request
+  });
+  throw error;
+}
+
 
   // Trigger a Vercel rebuild after updating GitHub
   await triggerVercelRebuild();
