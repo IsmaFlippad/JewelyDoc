@@ -70,10 +70,12 @@ async function handleUpsert(slug: string, content: string, title?: string) {
   }
 
   // Format the Markdown content with front matter
-  const formattedContent = `---
-                            title: ${title || slug}
-                            slug: /${slug}
-                            ---
+
+// app/api/rebuild-docs/route.ts
+const formattedContent = `---
+title: ${title || slug}
+slug: /${slug}
+---
   ${content}`;
 
   // Log before making changes on GitHub

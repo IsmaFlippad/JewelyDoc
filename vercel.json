@@ -3,7 +3,7 @@
   "builds": [
     {
       "src": "app/package.json",
-      "use": "@vercel/node",
+      "use": "@vercel/next",
       "config": {
         "distDir": ".next",
         "installCommand": "npm install --legacy-peer-deps",
@@ -23,11 +23,23 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/app/api/$1"
+      "dest": "/app/api/$1",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS, DELETE",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-WPDS-Operation"
+      }
     },
     {
-      "src": "/(.*)", 
-      "dest": "/app/public/$1" 
+      "src": "/frontend/(.*)",
+      "dest": "/frontend/$1",
+      "headers": {
+        "Cache-Control": "public, max-age=3600"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
     }
   ]
 }
