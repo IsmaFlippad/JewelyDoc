@@ -1,6 +1,7 @@
 ---
 title: Foire Aux Questions
 slug: /foire-aux-questions
+category: "Introduction"
 ---
 
 # Foire Aux Questions

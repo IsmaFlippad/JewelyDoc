@@ -1,6 +1,8 @@
 ---
 title: Guide de démarrage
 slug: /guide-de-demarrage
+category: "Introduction"
+
 ---
 
 # Guide de démarrage

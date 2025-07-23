@@ -1,6 +1,7 @@
 ---
 title: Découvrir Jewely
 slug: /decouvrir-jewely
+category: "Introduction"
 ---
 
 Bienvenue dans la documentation de Jewely. Cette page vous aidera à découvrir les fonctionnalités principales de notre plateforme.

@@ -1,6 +1,8 @@
 ---
 title: Procédure d’entrée en stock
 slug: /procedure-dentree-en-stock
+category: "Stock"
+
 ---
 
 ## 1️⃣ Sélection du type de produit

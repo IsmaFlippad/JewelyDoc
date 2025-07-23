@@ -1,6 +1,8 @@
 ---
 title: Fonctionnalités avancées
 slug: /fonctionnalites-avancees
+category: "Fonctionnalités"
+
 ---
 
 # Fonctionnalités avancées

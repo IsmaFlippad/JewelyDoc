@@ -40,7 +40,11 @@ const config = {
           // Important: Configure the path to look for WordPress-generated markdown files
           path: "docs",
           routeBasePath: "/",
+          remarkPlugins: [
+            [require('@docusaurus/remark-plugin-npm2yarn'), {sync: true}],
+          ],
         },
+
         blog: false, // Disable the blog plugin
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
@@ -74,6 +78,13 @@ const config = {
           },
         ],
       },
+      docs: {
+      sidebar: {
+        hideable: true,
+        autoCollapseCategories: true,
+      },
+    },
+
       footer: {
         style: "dark",
         links: [

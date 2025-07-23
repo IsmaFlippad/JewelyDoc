@@ -1,6 +1,8 @@
 ---
 title: Documentation Jewely
 slug: /documentation-jewely
+category: "Introduction"
+
 ---
 
 # Documentation Jewely
