@@ -1,46 +1,33 @@
 // sidebars.js
-const fs = require('fs');
+const fs   = require('fs');
 const path = require('path');
+const matter = require('gray-matter');
 
-// Fonction pour organiser les docs par catégorie
 function getCategorizedSidebar() {
   const docsPath = path.join(__dirname, 'docs');
-  const files = fs.readdirSync(docsPath);
-  
+  const files    = fs.readdirSync(docsPath);
   const categories = {};
 
   files.forEach(file => {
-    if (file.endsWith('.md') || file.endsWith('.mdx')) {
-      const content = fs.readFileSync(path.join(docsPath, file), 'utf8');
-      const frontMatter = content.match(/---\n([\s\S]*?)\n---/);
-      
-      if (frontMatter) {
-        const meta = frontMatter[1].split('\n').reduce((acc, line) => {
-          const [key, ...value] = line.split(':');
-          if (key && value) {
-            acc[key.trim()] = value.join(':').trim().replace(/['"]/g, '');
-          }
-          return acc;
-        }, {});
+    if (!file.match(/\.mdx?$/)) return;
+    const src  = fs.readFileSync(path.join(docsPath, file), 'utf8');
+    const { data } = matter(src);
 
-        if (meta.category) {
-          if (!categories[meta.category]) {
-            categories[meta.category] = [];
-          }
-          categories[meta.category].push({
-            type: 'doc',
-            id: file.replace(/\.mdx?$/, ''),
-            title: meta.title || file.replace(/\.mdx?$/, ''),
-          });
-        }
-      }
-    }
+    // data.categories est déjà un tableau de slugs
+    (data.categories || []).forEach(cat => {
+      categories[cat] = categories[cat] || [];
+      categories[cat].push({
+        type: 'doc',
+        id:   file.replace(/\.mdx?$/, ''),
+        label: data.title || file.replace(/\.mdx?$/, ''),
+      });
+    });
   });
 
-  return Object.entries(categories).map(([category, items]) => ({
+  return Object.entries(categories).map(([cat, items]) => ({
     type: 'category',
-    label: category,
-    items: items.sort((a, b) => a.title.localeCompare(b.title)),
+    label: cat.charAt(0).toUpperCase() + cat.slice(1),
+    items: items.sort((a, b) => a.label.localeCompare(b.label)).map(i => i.id),
     collapsed: false,
   }));
 }

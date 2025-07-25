@@ -1,18 +1,26 @@
 ---
-id: test-document
+id: 1
 title: "Document de Test"
-slug: /test-document
-category: "Général"
+slug: "test-document"
+date: "2025-07-25"
+modified: "2025-07-25T12:00:00Z"
+status: "publish"
+author: "Jean Dupont"
+categories:
+  - "général"
+  - "guide"
+tags:
+  - "test"
+  - "demo"
 ---
 
 # Document de Test
 
-Ceci est un document de test pour initialiser la structure Docusaurus.
+Ce document sert à vérifier que votre configuration Docusaurus et votre génération de sidebar fonctionnent correctement.
 
-## Section 1
-Contenu de test pour vérifier que le build fonctionne.
+## Section 1 – Introduction
 
-## Section 2
-- Liste
-- À puces
-- De test
+Vous pouvez ajouter du contenu en Markdown, des images :
+
+```md
+![Exemple d’image](./img/example.png)
